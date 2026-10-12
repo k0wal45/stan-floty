@@ -12,8 +12,8 @@ export default async function Home() {
         Zastąp arkusze Excel nowoczesnym systemem. Dynamiczna dostępność zasobów, szybkie wypożyczenia i jasne rozliczenia.
       </p>
       <div className="flex flex-wrap justify-center gap-4">
-        <Link href="/rejestracja">
-          <Button size="lg">Rozpocznij za darmo</Button>
+        <Link href="/logowanie">
+          <Button size="lg">Zaloguj się do platformy</Button>
         </Link>
         <Link href="/info">
           <Button variant="outline" size="lg">Dowiedz się więcej</Button>

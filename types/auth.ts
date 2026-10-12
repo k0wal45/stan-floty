@@ -1,4 +1,4 @@
-export type UserRole = "OWNER" | "MANAGER" | "STAFF";
+export type UserRole = "ADMIN" | "OWNER" | "MANAGER" | "STAFF";
 
 export interface AuthenticatedUser {
   userId: string;
@@ -7,3 +7,4 @@ export interface AuthenticatedUser {
   email: string;
   fullName: string;
 }
+

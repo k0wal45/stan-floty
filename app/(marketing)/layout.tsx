@@ -28,10 +28,7 @@ export default function MarketingLayout({
           </div>
           <div className="flex items-center gap-4">
             <Link href="/logowanie">
-              <Button variant="ghost" size="sm">Zaloguj</Button>
-            </Link>
-            <Link href="/rejestracja">
-              <Button size="sm">Rejestracja</Button>
+              <Button size="sm">Zaloguj się</Button>
             </Link>
           </div>
         </div>

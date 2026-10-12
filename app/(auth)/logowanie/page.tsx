@@ -2,7 +2,6 @@
 
 import { login } from "@/server/actions/auth";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -83,11 +82,8 @@ function LoginForm() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Nie masz konta?{" "}
-        <Link href="/rejestracja" className="font-medium text-primary underline-offset-4 hover:underline">
-          Zarejestruj się
-        </Link>
+      <p className="text-center text-xs text-muted-foreground">
+        Nie masz jeszcze konta? Skontaktuj się z administratorem systemu w celu uzyskania dostępu.
       </p>
     </div>
   );

@@ -19,7 +19,7 @@ export function PaymentHistoryPopover({ rentalId, children }: PaymentHistoryPopo
 
   useEffect(() => {
     if (open && payments === null) {
-      setLoading(true);
+      queueMicrotask(() => setLoading(true));
       getRentalPayments(rentalId)
         .then(setPayments)
         .catch(() => setPayments([]))

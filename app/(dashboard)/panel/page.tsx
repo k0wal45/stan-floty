@@ -12,21 +12,74 @@ import { Key, CheckCircle2, FileText, Building2 } from "lucide-react";
 export default async function DashboardPage() {
   const user = await requireAuthenticatedUser();
 
-  const [tenant] = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.id, user.tenantId))
-    .limit(1);
-
-  // 1. Items stats
-  const itemsStats = await db
-    .select({
-      status: items.status,
-      count: sql<number>`count(*)`.mapWith(Number),
-    })
-    .from(items)
-    .where(eq(items.tenantId, user.tenantId))
-    .groupBy(items.status);
+  const [
+    [tenant],
+    itemsStats,
+    [activeStats],
+    upcomingRentalsData
+  ] = await Promise.all([
+    db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.id, user.tenantId))
+      .limit(1),
+    db
+      .select({
+        status: items.status,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(items)
+      .where(eq(items.tenantId, user.tenantId))
+      .groupBy(items.status),
+    db
+      .select({
+        totalActive: sql<number>`count(*)`.mapWith(Number),
+        unpaidCount: sql<number>`sum(case when ${rentals.totalPrice} > COALESCE((SELECT SUM(${payments.amount}) FROM ${payments} WHERE ${payments.rentalId} = ${rentals.id}), 0) then 1 else 0 end)`.mapWith(Number),
+      })
+      .from(rentals)
+      .where(
+        and(
+          eq(rentals.tenantId, user.tenantId),
+          eq(rentals.status, "ACTIVE")
+        )
+      ),
+    db
+      .select({
+        id: rentals.id,
+        tenantId: rentals.tenantId,
+        itemId: rentals.itemId,
+        customerName: rentals.customerName,
+        customerPhone: rentals.customerPhone,
+        customerIdentifier: rentals.customerIdentifier,
+        startDate: rentals.startDate,
+        endDate: rentals.endDate,
+        initialEndDate: rentals.initialEndDate,
+        rateSnapshot: rentals.rateSnapshot,
+        rateUnitSnapshot: rentals.rateUnitSnapshot,
+        totalPrice: rentals.totalPrice,
+        status: rentals.status,
+        attachments: rentals.attachments,
+        createdAt: rentals.createdAt,
+        updatedAt: rentals.updatedAt,
+        itemName: items.name,
+        itemIdentifier: items.identifier,
+        totalPaid: sql<number>`COALESCE((
+          SELECT SUM(${payments.amount})
+          FROM ${payments}
+          WHERE ${payments.rentalId} = ${rentals.id}
+        ), 0)`.mapWith(Number),
+      })
+      .from(rentals)
+      .leftJoin(items, eq(items.id, rentals.itemId))
+      .where(
+        and(
+          eq(rentals.tenantId, user.tenantId),
+          eq(rentals.status, "ACTIVE")
+        )
+      )
+      .orderBy(rentals.endDate)
+      .limit(3)
+  ]);
 
   let availableCount = 0;
   let rentedCount = 0;
@@ -35,60 +88,8 @@ export default async function DashboardPage() {
     if (s.status === "RENTED") rentedCount = s.count;
   });
 
-  // 2. Active rentals stats
-  const [activeStats] = await db
-    .select({
-      totalActive: sql<number>`count(*)`.mapWith(Number),
-      unpaidCount: sql<number>`sum(case when ${rentals.totalPrice} > COALESCE((SELECT SUM(${payments.amount}) FROM ${payments} WHERE ${payments.rentalId} = ${rentals.id}), 0) then 1 else 0 end)`.mapWith(Number),
-    })
-    .from(rentals)
-    .where(
-      and(
-        eq(rentals.tenantId, user.tenantId),
-        eq(rentals.status, "ACTIVE")
-      )
-    );
-
   const totalActive = activeStats?.totalActive || 0;
   const unpaidCount = activeStats?.unpaidCount || 0;
-
-  // 3. Closest 3 ending rentals
-  const upcomingRentalsData = await db
-    .select({
-      id: rentals.id,
-      tenantId: rentals.tenantId,
-      itemId: rentals.itemId,
-      customerName: rentals.customerName,
-      customerPhone: rentals.customerPhone,
-      customerIdentifier: rentals.customerIdentifier,
-      startDate: rentals.startDate,
-      endDate: rentals.endDate,
-      initialEndDate: rentals.initialEndDate,
-      rateSnapshot: rentals.rateSnapshot,
-      rateUnitSnapshot: rentals.rateUnitSnapshot,
-      totalPrice: rentals.totalPrice,
-      status: rentals.status,
-      attachments: rentals.attachments,
-      createdAt: rentals.createdAt,
-      updatedAt: rentals.updatedAt,
-      itemName: items.name,
-      itemIdentifier: items.identifier,
-      totalPaid: sql<number>`COALESCE((
-        SELECT SUM(${payments.amount})
-        FROM ${payments}
-        WHERE ${payments.rentalId} = ${rentals.id}
-      ), 0)`.mapWith(Number),
-    })
-    .from(rentals)
-    .leftJoin(items, eq(items.id, rentals.itemId))
-    .where(
-      and(
-        eq(rentals.tenantId, user.tenantId),
-        eq(rentals.status, "ACTIVE")
-      )
-    )
-    .orderBy(rentals.endDate)
-    .limit(3);
 
   const upcomingRentals: RentalWithPaymentInfo[] = upcomingRentalsData.map((r) => ({
     ...r,

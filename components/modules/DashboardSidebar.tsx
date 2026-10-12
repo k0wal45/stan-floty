@@ -5,10 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Box, CalendarDays, ChevronLeft, ChevronRight, LogOut, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  Box,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Settings,
+  Shield,
+} from "lucide-react";
 import { logout } from "@/server/actions/auth";
 
-const navItems = [
+const baseNavItems = [
   { href: "/panel", label: "Pulpit", icon: LayoutDashboard },
   { href: "/przedmioty", label: "Zasoby", icon: Box },
   { href: "/wypozyczenia", label: "Wypożyczenia", icon: CalendarDays },
@@ -18,6 +27,10 @@ const navItems = [
 export function DashboardSidebar({ user }: { user: { fullName: string; role: string } }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+
+  const navItems = user.role === "ADMIN"
+    ? [...baseNavItems, { href: "/admin", label: "Panel Admina", icon: Shield }]
+    : baseNavItems;
 
   return (
     <div
@@ -64,7 +77,7 @@ export function DashboardSidebar({ user }: { user: { fullName: string; role: str
           <div className="flex items-center justify-between">
             <div className="flex flex-col truncate pr-2">
               <span className="text-sm font-medium truncate">{user.fullName}</span>
-              <span className="text-xs text-muted-foreground">{user.role}</span>
+              <span className="text-xs text-muted-foreground font-semibold text-primary">{user.role}</span>
             </div>
             <form action={logout}>
               <Button variant="ghost" size="icon" type="submit" title="Wyloguj">

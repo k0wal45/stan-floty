@@ -1,10 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/db";
 import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth";
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
@@ -33,10 +35,18 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-  const email = formData.get("email") as string;
+  try {
+    await requireRole("ADMIN");
+  } catch {
+    return {
+      error: "Brak uprawnień. Tylko administrator platformy może rejestrować nowe wypożyczalnie.",
+    };
+  }
+
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
-  const fullName = formData.get("fullName") as string;
-  const companyName = formData.get("companyName") as string;
+  const fullName = (formData.get("fullName") as string)?.trim();
+  const companyName = (formData.get("companyName") as string)?.trim();
 
   if (!email || !password || !fullName || !companyName) {
     return { error: "Wszystkie pola są wymagane" };
@@ -58,20 +68,18 @@ export async function signup(formData: FormData) {
       return { error: "Konto z tym adresem e-mail już istnieje" };
     }
 
-    const supabase = await createClient();
+    const adminClient = createAdminClient();
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { data: authData, error: authError } =
+      await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
 
     if (authError || !authData.user) {
-      return { error: "Nie udało się utworzyć konta. Spróbuj ponownie." };
-    }
-
-    // Supabase returns empty identities array for duplicate auth emails
-    if (authData.user.identities?.length === 0) {
-      return { error: "Konto z tym adresem e-mail już istnieje" };
+      return { error: authError?.message || "Nie udało się utworzyć konta w systemie." };
     }
 
     // Create tenant + user (OWNER) atomically
@@ -91,8 +99,8 @@ export async function signup(formData: FormData) {
         });
       });
     } catch {
-      // Auth user created but DB insert failed.
-      // Orphan auth user without a users row will fail requireAuthenticatedUser().
+      // Rollback auth user if DB insert failed
+      await adminClient.auth.admin.deleteUser(authData.user.id);
       return { error: "Nie udało się utworzyć organizacji. Spróbuj ponownie." };
     }
   } catch (err) {

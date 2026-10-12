@@ -6,12 +6,22 @@ The permission matrix is the contract for protected operations. When adding a ne
 
 # 1. Roles
 
+## ADMIN
+
+Platform administrator with superuser privileges across the entire SaaS instance:
+
+- platform tenant management (create, list, delete organizations)
+- global user management across all tenants (create, change roles, delete users)
+- reset/change passwords for users (strictly write-only without reading or disclosing passwords)
+- registration of new organizations (public signup is disabled)
+- access to `/admin` dashboard
+
 ## OWNER
 
 Full tenant permissions, including:
 
 - subscription/billing management
-- user management
+- user management within tenant
 - all operational functionality
 - analytics
 - configuration
@@ -42,19 +52,23 @@ STAFF must not access SaaS billing/subscription administration or user administr
 
 # 2. Authorization Matrix
 
-| Capability | OWNER | MANAGER | STAFF |
-|---|---:|---:|---:|
-| View items | ✅ | ✅ | ✅ |
-| Create item | ✅ | ✅ | ❌ |
-| Edit item | ✅ | ✅ | ❌ |
-| View rentals | ✅ | ✅ | ✅ |
-| Create rental | ✅ | ✅ | ✅ |
-| Extend rental | ✅ | ✅ | ✅ |
-| Record payment | ✅ | ✅ | ✅ |
-| Complete rental | ✅ | ✅ | ✅ |
-| Cancel rental | ✅ | ✅ | ✅ |
-| Manage users | ✅ | ❌ | ❌ |
-| Manage SaaS billing | ✅ | ❌ | ❌ |
+| Capability | ADMIN | OWNER | MANAGER | STAFF |
+|---|---:|---:|---:|---:|
+| Platform tenant management | ✅ | ❌ | ❌ | ❌ |
+| Cross-tenant user management | ✅ | ❌ | ❌ | ❌ |
+| Register new organizations | ✅ | ❌ | ❌ | ❌ |
+| Access Admin Dashboard (`/admin`) | ✅ | ❌ | ❌ | ❌ |
+| View items | ✅ | ✅ | ✅ | ✅ |
+| Create item | ✅ | ✅ | ✅ | ❌ |
+| Edit item | ✅ | ✅ | ✅ | ❌ |
+| View rentals | ✅ | ✅ | ✅ | ✅ |
+| Create rental | ✅ | ✅ | ✅ | ✅ |
+| Extend rental | ✅ | ✅ | ✅ | ✅ |
+| Record payment | ✅ | ✅ | ✅ | ✅ |
+| Complete rental | ✅ | ✅ | ✅ | ✅ |
+| Cancel rental | ✅ | ✅ | ✅ | ✅ |
+| Manage users within tenant | ✅ | ✅ | ❌ | ❌ |
+| Manage SaaS billing | ✅ | ✅ | ❌ | ❌ |
 
 When business requirements change, update this matrix and its tests together.
 
